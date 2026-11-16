@@ -16,7 +16,11 @@ restart the routing processes.
 `demo.nusapeta.web.id` reaches this container because the tunnel ingress targets
 `http://gateway:8080` and this service holds the `gateway` alias on
 `1panel-network`. The API gateway answers `routeid-gateway:8080` on the same
-network, so no Cloudflare or DNS change is needed to move the front end.
+network, so neither Cloudflare nor DNS needs to change to move the front end.
+
+The gateway service is named `api` for this reason: compose adds a service's own
+name as a network alias, and two containers answering to `gateway` would split
+the ingress between a page and a JSON API at random.
 
 ## Build and run
 

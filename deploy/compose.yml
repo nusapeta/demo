@@ -22,7 +22,7 @@ services:
     networks:
       edge:
         # The tunnel ingress for demo.nusapeta.web.id points at http://gateway:8080.
-        # This container answers that name; the API gateway keeps routeid-gateway.
+        # This container answers that name; the API gateway carries routeid-gateway.
         aliases:
           - gateway
     healthcheck:
