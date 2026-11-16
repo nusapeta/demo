@@ -1,0 +1,240 @@
+/* A. Brutalist demo skin: paper panel, ink rules, offset shadows. */
+
+:root {
+  --surface: #fffdf6;
+  --surface-quiet: #f1ebdb;
+  --surface-raised: #fffdf6;
+  --ink: #14120e;
+  --muted: #33302a;
+  --line: #14120e;
+  --line-strong: #14120e;
+  --line-control: #14120e;
+  --accent: #14120e;
+  --accent-strong: #14120e;
+  --orange: #f0522a;
+  --orange-hover: #ff6a3d;
+  --focus: #f0522a;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, "Helvetica Neue", Arial, sans-serif;
+  background: #f1ebdb;
+}
+
+.app {
+  background: #f1ebdb;
+}
+
+.panel {
+  background: #fffdf6;
+  border-right: 3px solid #14120e;
+  box-shadow: 10px 0 0 rgba(20, 18, 14, 0.12);
+}
+
+.masthead h1 {
+  font-family: inherit;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.05em;
+  font-size: 2rem;
+}
+
+.masthead p {
+  color: #33302a;
+}
+
+.control-label,
+.point-role,
+.hint {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #33302a;
+}
+
+.segmented {
+  border: 3px solid #14120e;
+  border-radius: 0;
+  background: #fffdf6;
+  padding: 0;
+}
+
+.segment {
+  border-radius: 0;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #33302a;
+}
+
+.segment[aria-pressed="true"] {
+  background: #14120e;
+  color: #fffdf6;
+}
+
+.search-input {
+  border: 3px solid #14120e;
+  border-radius: 0;
+  background: #fffdf6;
+  font-family: inherit;
+}
+
+.search-input::placeholder {
+  color: #5c574c;
+}
+
+.point {
+  border: 3px solid #14120e;
+  border-radius: 0;
+  background: #f1ebdb;
+}
+
+.point-key {
+  border-radius: 0;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-weight: 700;
+}
+
+.point-key--from {
+  background: #14120e;
+  color: #fffdf6;
+}
+
+.point-key--to {
+  background: #f0522a;
+  color: #14120e;
+}
+
+.point-coord {
+  color: #33302a;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+}
+
+.button {
+  border: 3px solid #14120e;
+  border-radius: 0;
+  background: #fffdf6;
+  color: #14120e;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.78rem;
+  box-shadow: 4px 4px 0 #14120e;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+
+.button:hover:not(:disabled) {
+  background: #f1ebdb;
+  color: #14120e;
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #14120e;
+}
+
+.button--primary {
+  background: #f0522a;
+  color: #14120e;
+}
+
+.button--primary:hover:not(:disabled) {
+  background: #ff6a3d;
+  color: #14120e;
+}
+
+.button:disabled {
+  box-shadow: none;
+  opacity: 0.45;
+}
+
+.status {
+  border: 3px solid #14120e;
+  border-radius: 0;
+  background: #fffdf6;
+  color: #14120e;
+}
+
+.status[data-tone="success"] {
+  background: #dff0dc;
+  border-color: #14120e;
+  color: #12290f;
+}
+
+.status[data-tone="error"] {
+  background: #fbdcd4;
+  border-color: #14120e;
+  color: #4d1408;
+}
+
+.result {
+  border: 3px solid #14120e;
+  border-radius: 0;
+  background: #fffdf6;
+}
+
+.metric dd {
+  font-family: inherit;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.badge {
+  border-radius: 0;
+  border: 2px solid #14120e;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.leaflet-tile {
+  filter: grayscale(0.85) contrast(1.06) brightness(1.03);
+}
+
+.leaflet-container {
+  background: #e7dfc9;
+}
+
+.route-core {
+  stroke: #e0442b;
+}
+
+.pin {
+  border-radius: 0;
+  border: 3px solid #14120e;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-weight: 700;
+}
+
+.pin--from {
+  background: #14120e;
+  color: #fffdf6;
+}
+
+.pin--to {
+  background: #f0522a;
+  color: #14120e;
+}
+
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  border-radius: 0;
+  background: #fffdf6;
+  color: #14120e;
+  border: 2px solid #14120e;
+}
+
+.leaflet-container .leaflet-control-attribution {
+  background: #fffdf6;
+  color: #33302a;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+
+.map-locate__button {
+  border-radius: 0;
+  border: 3px solid #14120e;
+  background: #fffdf6;
+  color: #14120e;
+  box-shadow: 3px 3px 0 #14120e;
+}

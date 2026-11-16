@@ -1,0 +1,253 @@
+/* C. 8-bit demo skin: cream panel, chunky rules, pixelated basemap. */
+
+:root {
+  --surface: #fffdf3;
+  --surface-quiet: #f9f4e2;
+  --surface-raised: #fffdf3;
+  --ink: #14120e;
+  --muted: #33302a;
+  --line: #14120e;
+  --line-strong: #14120e;
+  --line-control: #14120e;
+  --accent: #2450c8;
+  --accent-strong: #1a3aa0;
+  --orange: #c9331d;
+  --orange-hover: #b02e19;
+  --focus: #2450c8;
+}
+
+body {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  background: #f9f4e2;
+}
+
+.panel {
+  background: #fffdf3;
+  border-right: 4px solid #14120e;
+}
+
+.masthead h1 {
+  font-family: inherit;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  font-size: 1.5rem;
+}
+
+.masthead p {
+  color: #33302a;
+}
+
+.control-label,
+.point-role,
+.hint {
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #33302a;
+}
+
+.segmented {
+  border: 3px solid #14120e;
+  border-radius: 0;
+  background: #fffdf3;
+  padding: 0;
+}
+
+.segment {
+  border-radius: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #33302a;
+}
+
+.segment[aria-pressed="true"] {
+  background: #14120e;
+  color: #f9f4e2;
+}
+
+.search-input {
+  border: 3px solid #14120e;
+  border-radius: 0;
+  background: #fffdf3;
+  font-family: inherit;
+}
+
+.search-input::placeholder {
+  color: #5c574c;
+}
+
+.point {
+  border: 3px solid #14120e;
+  border-radius: 0;
+  background: #f9f4e2;
+}
+
+.point-key {
+  border-radius: 0;
+  font-weight: 700;
+}
+
+.point-key--from {
+  background: #14120e;
+  color: #f9f4e2;
+}
+
+.point-key--to {
+  background: #c9331d;
+  color: #ffffff;
+}
+
+.point-coord {
+  color: #33302a;
+  font-size: 0.72rem;
+}
+
+.button {
+  border: 3px solid #14120e;
+  border-radius: 0;
+  background: #f9f4e2;
+  color: #14120e;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 4px 4px 0 #14120e;
+  transition: transform 80ms steps(2), box-shadow 80ms steps(2);
+}
+
+.button:hover:not(:disabled) {
+  background: #ffcc33;
+  color: #14120e;
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #14120e;
+}
+
+.button--primary {
+  background: #c9331d;
+  color: #ffffff;
+}
+
+.button--primary:hover:not(:disabled) {
+  background: #b02e19;
+  color: #ffffff;
+}
+
+.button:disabled {
+  box-shadow: none;
+  opacity: 0.45;
+}
+
+.status {
+  border: 3px solid #14120e;
+  border-radius: 0;
+  background: #fffdf3;
+  color: #14120e;
+}
+
+.status[data-tone="success"] {
+  background: #dff0dc;
+  color: #12290f;
+}
+
+.status[data-tone="error"] {
+  background: #fbdcd4;
+  color: #4d1408;
+}
+
+.result {
+  border: 3px solid #14120e;
+  border-radius: 0;
+  background: #fffdf3;
+}
+
+.metric dd {
+  font-family: inherit;
+  font-weight: 800;
+  color: #c9331d;
+  letter-spacing: -0.02em;
+}
+
+.metric dt,
+.meta dt {
+  color: #33302a;
+}
+
+.badge {
+  border-radius: 0;
+  border: 2px solid #14120e;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.badge--warn {
+  background: #ffcc33;
+  color: #14120e;
+}
+
+.leaflet-tile {
+  image-rendering: pixelated;
+  filter: saturate(1.45) contrast(1.12) brightness(1.02);
+}
+
+.leaflet-container {
+  background: #e8e2cf;
+}
+
+.map-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(20, 18, 14, 0.07) 0 1px,
+    transparent 1px 4px
+  );
+}
+
+.route-core {
+  stroke: #d92f14;
+}
+
+.pin {
+  border-radius: 0;
+  border: 3px solid #14120e;
+  font-weight: 700;
+}
+
+.pin--from {
+  background: #14120e;
+  color: #f9f4e2;
+}
+
+.pin--to {
+  background: #c9331d;
+  color: #ffffff;
+}
+
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  border-radius: 0;
+  background: #fffdf3;
+  color: #14120e;
+  border: 2px solid #14120e;
+}
+
+.leaflet-container .leaflet-control-attribution {
+  background: #fffdf3;
+  color: #33302a;
+  font-size: 0.62rem;
+}
+
+.map-locate__button {
+  border-radius: 0;
+  border: 3px solid #14120e;
+  background: #fffdf3;
+  color: #14120e;
+  box-shadow: 3px 3px 0 #14120e;
+}
