@@ -40,6 +40,22 @@ search calls fail; static rendering and `/healthz` still work.
 The engine's gateway must be up as `routeid-gateway`, and both containers must
 share `1panel-network`.
 
+## Map styling
+
+- Tiles are only `tile.openstreetmap.org` (CSP `img-src`). To keep the route the
+  loudest layer, `.leaflet-tile` gets `saturate(0.55) contrast(1.04)` in CSS
+  instead of a second tile provider.
+- The route is drawn as a white casing and a `#0f5b7a` core; the core has
+  `pathLength="1"` plus a 700 ms `stroke-dashoffset` animation so a new geometry
+  is drawn once. `prefers-reduced-motion` removes it.
+- Pins are numbered 1 and 2; only the destination uses orange, because orange is
+  the single accent in the palette.
+- Theme is light only, deliberately: the available tile source is light, and a
+  dark mode would need a second tile set or an inverted filter that destroys map
+  labels. Revisit when a dark tile source is available.
+- Interface copy is Indonesian while the landing page is English on purpose: the
+  demo is for local map users, the landing page for open source readers.
+
 ## Contract
 
 - `/` and `/assets/` are static; `/assets/` is immutable-cached because every

@@ -664,7 +664,7 @@
   function markerIcon(kind) {
     return L.divIcon({
       className: "route-pin",
-      html: '<span class="pin pin--' + kind + '">' + (kind === "from" ? "A" : "B") + "</span>",
+      html: '<span class="pin pin--' + kind + '">' + (kind === "from" ? "1" : "2") + "</span>",
       iconSize: [44, 44],
       iconAnchor: [22, 22]
     });
@@ -796,13 +796,14 @@
     var casing = L.geoJSON(body.geojson, {
       style: {
         color: "#ffffff",
-        weight: 8,
-        opacity: 0.9,
+        weight: 9,
+        opacity: 0.92,
         lineCap: "round",
         lineJoin: "round"
       }
     });
     var line = L.geoJSON(body.geojson, {
+      className: "route-core",
       style: {
         color: "#0f5b7a",
         weight: 4,
@@ -818,6 +819,17 @@
     addSnapLine(group, state.to, body.snap_to);
     group.addTo(map);
     routeLayer = group;
+
+    // pathLength 1 membuat dasharray dipakai sebagai persentase, jadi animasi
+    // gambar garis tidak perlu menghitung getTotalLength.
+    line.eachLayer(function (layer) {
+      var element = layer.getElement();
+      if (element) {
+        element.setAttribute("pathLength", "1");
+        element.classList.add("route-core-draw");
+      }
+    });
+
     fitRoute(body);
   }
 
