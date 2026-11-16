@@ -43,13 +43,14 @@ share `1panel-network`.
 ## Map styling
 
 - Tiles are only `tile.openstreetmap.org` (CSP `img-src`). To keep the route the
-  loudest layer, `.leaflet-tile` gets `saturate(0.55) contrast(1.04)` in CSS
-  instead of a second tile provider.
-- The route is drawn as a white casing and a `#0f5b7a` core; the core has
+  loudest layer, `.leaflet-tile` gets `image-rendering: pixelated` plus
+  `saturate(1.45) contrast(1.12) brightness(1.02)` in CSS instead of a second
+  tile provider; a 1 px scanline overlay on `.map-shell` finishes the 8-bit read.
+- The route is drawn as a white casing and a `#d92f14` core; the core has
   `pathLength="1"` plus a 700 ms `stroke-dashoffset` animation so a new geometry
   is drawn once. `prefers-reduced-motion` removes it.
-- Pins are numbered 1 and 2; only the destination uses orange, because orange is
-  the single accent in the palette.
+- Pins are numbered 1 and 2; only the destination uses `--orange` (`#c9331d`),
+  because red is the single accent in the palette.
 - Theme is light only, deliberately: the available tile source is light, and a
   dark mode would need a second tile set or an inverted filter that destroys map
   labels. Revisit when a dark tile source is available.

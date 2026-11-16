@@ -805,7 +805,7 @@
     var line = L.geoJSON(body.geojson, {
       className: "route-core",
       style: {
-        color: "#0f5b7a",
+        color: "#d92f14",
         weight: 4,
         opacity: 1,
         lineCap: "round",
