@@ -1,0 +1,37 @@
+services:
+  demo:
+    image: ghcr.io/nusapeta/demo:0.1.0
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        COMMIT: ${COMMIT:-dev}
+    container_name: nusapeta-demo
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    expose:
+      - "8080"
+    networks:
+      edge:
+        # The tunnel ingress for demo.nusapeta.web.id points at http://gateway:8080.
+        # This container answers that name; the API gateway keeps routeid-gateway.
+        aliases:
+          - gateway
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+networks:
+  edge:
+    external: true
+    name: 1panel-network
