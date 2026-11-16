@@ -23,6 +23,7 @@
     placeResults: document.getElementById("place-results"),
     routeButton: document.getElementById("route-button"),
     resetButton: document.getElementById("reset-button"),
+    swapButton: document.getElementById("swap-button"),
     shareButton: document.getElementById("share-button"),
     result: document.getElementById("result"),
     region: document.getElementById("result-region"),
@@ -122,6 +123,7 @@
 
   els.routeButton.addEventListener("click", calculateRoute);
   els.resetButton.addEventListener("click", resetAll);
+  els.swapButton.addEventListener("click", swapPoints);
   els.shareButton.addEventListener("click", copyLink);
 
   els.profileButtons.forEach(function (button) {
@@ -664,7 +666,7 @@
   function markerIcon(kind) {
     return L.divIcon({
       className: "route-pin",
-      html: '<span class="pin pin--' + kind + '">' + (kind === "from" ? "1" : "2") + "</span>",
+      html: '<span class="pin pin--' + kind + '">' + (kind === "from" ? "A" : "B") + "</span>",
       iconSize: [44, 44],
       iconAnchor: [22, 22]
     });
@@ -999,6 +1001,22 @@
     els.note.hidden = true;
   }
 
+  function swapPoints() {
+    if (!state.from && !state.to) {
+      return;
+    }
+    noteInteraction();
+    var from = state.from;
+    state.from = state.to;
+    state.to = from;
+    syncMarker("from");
+    syncMarker("to");
+    pointChanged();
+    if (state.from && state.to) {
+      calculateRoute();
+    }
+  }
+
   function resetAll() {
     noteInteraction();
     cancelRequest();
@@ -1073,6 +1091,7 @@
     els.routeButton.setAttribute("aria-busy", state.loading ? "true" : "false");
     els.shareButton.disabled = !ready;
     els.resetButton.disabled = !state.loading && !state.from && !state.to && !state.result;
+    els.swapButton.disabled = !state.from && !state.to;
   }
 
   function nextStepText() {

@@ -49,8 +49,11 @@ share `1panel-network`.
 - The route is drawn as a white casing and a `#d92f14` core; the core has
   `pathLength="1"` plus a 700 ms `stroke-dashoffset` animation so a new geometry
   is drawn once. `prefers-reduced-motion` removes it.
-- Pins are numbered 1 and 2; only the destination uses `--orange` (`#c9331d`),
-  because red is the single accent in the palette.
+- Pins are lettered A (origin) and B (destination) to match the panel cards; only
+  B uses `--orange` (`#c9331d`), because red is the single accent in the palette.
+  A swap control sits between the cards: it exchanges both points and recomputes
+  the route, so the direction of a one-way street can be checked without
+  re-picking anchors.
 - Theme is light only, deliberately: the available tile source is light, and a
   dark mode would need a second tile set or an inverted filter that destroys map
   labels. Revisit when a dark tile source is available.

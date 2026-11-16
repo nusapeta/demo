@@ -284,6 +284,32 @@ h2 {
   font-weight: 600;
 }
 
+.swap {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.swap:hover:not(:disabled) {
+  background: var(--sun);
+}
+
+.swap:active:not(:disabled) {
+  background: #e8b62b;
+}
+
+.swap:disabled {
+  opacity: 0.45;
+}
+
 .search {
   display: grid;
   gap: 7px;
