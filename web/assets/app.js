@@ -1208,6 +1208,7 @@
         }
         renderNearest(reply.body);
         setToolNote(els.nearestNote, "", "neutral");
+        refresh();
       })
       .catch(function (error) {
         els.nearestList.hidden = true;
@@ -1327,6 +1328,7 @@
       setToolNote(els.isoNote, parts.length
         ? "Area " + minutes + " menit: " + parts.join(", ") + "."
         : "Area " + minutes + " menit ditampilkan.", "neutral");
+      refresh();
     }).catch(function (error) {
       if (error && error.name === "AbortError") {
         return;
@@ -1484,12 +1486,18 @@
     });
   }
 
+  // Alat peta bisa mengisi layar tanpa titik A/B, jadi Ulangi harus hidup
+  // setiap kali ada sesuatu untuk dibersihkan, bukan hanya saat ada rute.
+  function toolsActive() {
+    return !els.nearestList.hidden || !els.isoNote.hidden;
+  }
+
   function updateControls() {
     var ready = Boolean(state.from && state.to);
     els.routeButton.disabled = !ready || state.loading;
     els.routeButton.setAttribute("aria-busy", state.loading ? "true" : "false");
     els.shareButton.disabled = !ready;
-    els.resetButton.disabled = !state.loading && !state.from && !state.to && !state.result;
+    els.resetButton.disabled = !state.loading && !state.from && !state.to && !state.result && !toolsActive();
     els.swapButton.disabled = !state.from && !state.to;
     els.nearestButton.disabled = state.loading;
   }
