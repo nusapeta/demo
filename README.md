@@ -59,9 +59,14 @@ share `1panel-network`.
   `/isochrone` for 10 or 15 minutes and reports the returned area and node count.
   A `422` clears the overlay, resets the select and shows the engine's reason, so
   an oversized area never leaves a stale polygon on the map.
+- `Alamat dari koordinat` calls `/place/reverse` for the entered latitude and
+  longitude and shows the nearest named feature with its administrative context.
+  House numbers are never interpolated, so this is a feature name, not a postal
+  address; `Jadikan A`/`Jadikan B` reuse the returned coordinates. The tool
+  disables itself when the gateway has no `/place` bundle (`/place/healthz`).
 - `/lab/` exposes the same endpoints as raw forms (`/route` with `via` and
-  `format`, `/matrix`, `/nearest`, `/isochrone`) and prints status, elapsed time
-  and the JSON body.
+  `format`, `/matrix`, `/nearest`, `/isochrone`, `/place/reverse`) and prints
+  status, elapsed time and the JSON body.
 
 ## Map styling
 

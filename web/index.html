@@ -153,7 +153,32 @@
         </label>
         <p class="tool-note" id="iso-note" hidden></p>
       </div>
-      <p class="tool-link"><a href="/lab/">Lab API mentah</a> untuk semua endpoint, termasuk /matrix dan /via.</p>
+      <div class="tool">
+        <span class="control-label" id="reverse-label">Alamat dari koordinat</span>
+        <div class="coord-grid">
+          <label class="coord-field" for="reverse-lat">
+            <span>Lintang</span>
+            <input class="search-input" type="text" id="reverse-lat" name="lat" placeholder="-6.1754" autocomplete="off" spellcheck="false" inputmode="decimal" aria-describedby="reverse-note">
+          </label>
+          <label class="coord-field" for="reverse-lon">
+            <span>Bujur</span>
+            <input class="search-input" type="text" id="reverse-lon" name="lon" placeholder="106.8272" autocomplete="off" spellcheck="false" inputmode="decimal" aria-describedby="reverse-note">
+          </label>
+        </div>
+        <label class="select-field" for="reverse-radius">
+          <span class="control-label">Radius</span>
+          <select class="select" id="reverse-radius">
+            <option value="250">250 m</option>
+            <option value="1000" selected>1 km</option>
+            <option value="5000">5 km</option>
+            <option value="10000">10 km</option>
+          </select>
+        </label>
+        <button type="button" class="button" id="reverse-button" aria-describedby="reverse-label" disabled>Cari alamat</button>
+        <p class="tool-note" id="reverse-note" hidden></p>
+        <div class="reverse-card" id="reverse-card" hidden></div>
+      </div>
+      <p class="tool-link"><a href="/lab/">Lab API mentah</a> untuk semua endpoint, termasuk /matrix, /via, dan /place/reverse.</p>
     </div>
 
     <p class="fineprint">Rute dihitung dari data <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL 1.0). Hasil dapat berbeda dari navigasi produksi.</p>

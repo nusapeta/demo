@@ -44,6 +44,12 @@
     nearestButton: document.getElementById("nearest-button"),
     nearestNote: document.getElementById("nearest-note"),
     nearestList: document.getElementById("nearest-list"),
+    reverseLat: document.getElementById("reverse-lat"),
+    reverseLon: document.getElementById("reverse-lon"),
+    reverseRadius: document.getElementById("reverse-radius"),
+    reverseButton: document.getElementById("reverse-button"),
+    reverseNote: document.getElementById("reverse-note"),
+    reverseCard: document.getElementById("reverse-card"),
     isoSelect: document.getElementById("iso-select"),
     isoNote: document.getElementById("iso-note"),
     profileButtons: Array.prototype.slice.call(document.querySelectorAll("[data-profile]"))
@@ -78,6 +84,9 @@
   var placeController = null;
   var placeSequence = 0;
   var placeUnavailable = false;
+  var reverseController = null;
+  var reverseSequence = 0;
+  var reverseResult = null;
   var interaction = 0;
   var programmaticView = false;
 
@@ -143,6 +152,23 @@
   els.shareButton.addEventListener("click", copyLink);
   els.nearestButton.addEventListener("click", findNearest);
   els.isoSelect.addEventListener("change", toggleIsochrone);
+  els.reverseButton.addEventListener("click", findAddress);
+  [els.reverseLat, els.reverseLon].forEach(function (input) {
+    input.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter") {
+        return;
+      }
+      event.preventDefault();
+      if (!els.reverseButton.disabled) {
+        findAddress();
+      }
+    });
+  });
+  els.reverseRadius.addEventListener("change", function () {
+    if (reverseResult) {
+      findAddress();
+    }
+  });
   els.altSelect.addEventListener("change", function () {
     state.alt = clampAlt(els.altSelect.value);
     routeOptionsChanged();
@@ -644,6 +670,8 @@
     els.placeQuery.placeholder = "Pencarian tempat tidak tersedia";
     closeResults();
     setSearchNote(message);
+    els.reverseButton.disabled = true;
+    setToolNote(els.reverseNote, "Pencarian alamat tidak aktif di server ini.", "neutral");
     refresh();
   }
 
@@ -1262,6 +1290,195 @@
     setToolNote(els.nearestNote, "Kandidat snap terdekat, tanpa perhitungan rute.", "neutral");
   }
 
+  // Geocoder membalik koordinat menjadi fitur bernama terdekat, bukan alamat
+  // pos. Nomor rumah tidak pernah diinterpolasi, jadi kartu ini menampilkan
+  // nama fitur dan konteks administratif, bukan alamat pengiriman.
+  function readCoordinate(input, limit) {
+    var raw = String(input.value).trim().replace(",", ".");
+    if (raw === "") {
+      return null;
+    }
+    var value = Number(raw);
+    if (!Number.isFinite(value) || value < -limit || value > limit) {
+      return null;
+    }
+    return value;
+  }
+
+  function clearReverse() {
+    reverseSequence += 1;
+    if (reverseController) {
+      reverseController.abort();
+      reverseController = null;
+    }
+    reverseResult = null;
+    els.reverseCard.replaceChildren();
+    els.reverseCard.hidden = true;
+    els.reverseButton.removeAttribute("aria-busy");
+    setToolNote(els.reverseNote, "", "neutral");
+  }
+
+  function findAddress() {
+    if (placeUnavailable) {
+      return;
+    }
+    var lat = readCoordinate(els.reverseLat, 90);
+    var lon = readCoordinate(els.reverseLon, 180);
+    if (lat === null || lon === null) {
+      setToolNote(els.reverseNote, "Isi lintang -90..90 dan bujur -180..180.", "error");
+      return;
+    }
+
+    clearReverse();
+    var sequence = reverseSequence;
+    var controller = new AbortController();
+    reverseController = controller;
+    els.reverseButton.setAttribute("aria-busy", "true");
+    els.reverseButton.disabled = true;
+    setToolNote(els.reverseNote, "Mencari alamat di " + lat.toFixed(5) + ", " + lon.toFixed(5) + ".", "neutral");
+
+    var query = new URLSearchParams({
+      lat: lat.toFixed(7),
+      lon: lon.toFixed(7),
+      radius: els.reverseRadius.value,
+      addressdetails: "1"
+    });
+
+    fetch(PLACE_ROOT + "/reverse?" + query.toString(), {
+      signal: controller.signal,
+      headers: { Accept: "application/json" }
+    }).then(function (response) {
+      return response.json().catch(function () {
+        return null;
+      }).then(function (body) {
+        return { response: response, body: body };
+      });
+    }).then(function (reply) {
+      if (sequence !== reverseSequence) {
+        return;
+      }
+      reverseController = null;
+      if (reply.response.status === 404) {
+        var radius = Number(els.reverseRadius.value);
+        setToolNote(els.reverseNote,
+          "Tidak ada fitur bernama dalam radius " + formatMeters(radius) + ". Coba radius lebih besar.",
+          "neutral");
+        return;
+      }
+      if (reply.response.status === 429) {
+        setToolNote(els.reverseNote, "Terlalu banyak permintaan. Tunggu sebentar.", "error");
+        return;
+      }
+      if (!reply.response.ok) {
+        throw new Error("Permintaan alamat gagal (HTTP " + reply.response.status + ").");
+      }
+      if (!reply.body || typeof reply.body !== "object" || Array.isArray(reply.body)) {
+        throw new Error("Respons alamat tidak valid.");
+      }
+      renderAddress(reply.body, lat, lon);
+      setToolNote(els.reverseNote, "", "neutral");
+      refresh();
+    }).catch(function (error) {
+      if (error && error.name === "AbortError") {
+        return;
+      }
+      if (sequence !== reverseSequence) {
+        return;
+      }
+      reverseController = null;
+      setToolNote(els.reverseNote, error instanceof TypeError
+        ? "Tidak bisa menghubungi server. Periksa koneksi."
+        : (error && error.message ? error.message : "Gagal mencari alamat."), "error");
+    }).finally(function () {
+      if (sequence !== reverseSequence) {
+        return;
+      }
+      els.reverseButton.removeAttribute("aria-busy");
+      updateControls();
+    });
+  }
+
+  function renderAddress(hit, lat, lon) {
+    var featureLat = Number(hit.lat);
+    var featureLon = Number(hit.lon);
+    var name = typeof hit.name === "string" && hit.name ? hit.name : "";
+    var display = typeof hit.display_name === "string" ? hit.display_name : "";
+
+    reverseResult = {
+      lat: Number.isFinite(featureLat) ? featureLat : lat,
+      lng: Number.isFinite(featureLon) ? featureLon : lon,
+      label: name || firstSegment(display)
+    };
+
+    var card = els.reverseCard;
+    card.replaceChildren();
+
+    var title = document.createElement("p");
+    title.className = "reverse-card__name";
+    title.textContent = reverseResult.label || "Fitur tanpa nama";
+    card.appendChild(title);
+
+    if (display && display !== reverseResult.label) {
+      var address = document.createElement("p");
+      address.className = "reverse-card__address";
+      address.textContent = display;
+      card.appendChild(address);
+    }
+
+    var meta = document.createElement("p");
+    meta.className = "reverse-card__meta";
+    var bits = [];
+    if (hit.class && hit.type) {
+      bits.push(hit.class + " / " + hit.type);
+    }
+    if (hit.osm_type && hit.osm_id) {
+      bits.push(hit.osm_type + " " + hit.osm_id);
+    }
+    bits.push(reverseResult.lat.toFixed(5) + ", " + reverseResult.lng.toFixed(5));
+    bits.forEach(function (bit) {
+      var span = document.createElement("span");
+      span.textContent = bit;
+      meta.appendChild(span);
+    });
+    card.appendChild(meta);
+
+    var actions = document.createElement("div");
+    actions.className = "reverse-card__actions";
+    actions.appendChild(addressButton("from", "Jadikan A"));
+    actions.appendChild(addressButton("to", "Jadikan B"));
+    var center = document.createElement("button");
+    center.type = "button";
+    center.className = "button";
+    center.textContent = "Lihat di peta";
+    center.addEventListener("click", function () {
+      centerOnLocation(reverseResult.lat, reverseResult.lng);
+      setStatus("Peta dipusatkan di " + (reverseResult.label || "fitur terdekat") + ".", "neutral");
+    });
+    actions.appendChild(center);
+    card.appendChild(actions);
+
+    card.hidden = false;
+  }
+
+  function addressButton(kind, text) {
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "button";
+    button.textContent = text;
+    button.addEventListener("click", function () {
+      if (!reverseResult) {
+        return;
+      }
+      noteInteraction();
+      state[kind] = { lat: reverseResult.lat, lng: reverseResult.lng, label: reverseResult.label || "" };
+      syncMarker(kind);
+      pointChanged();
+      setStatus((kind === "from" ? "Titik awal" : "Titik tujuan") +
+        " diisi dari alamat terdekat. " + nextStepText(), "success");
+    });
+    return button;
+  }
+
   function toggleIsochrone() {
     var minutes = Number(els.isoSelect.value);
     if (!Number.isFinite(minutes) || minutes <= 0) {
@@ -1432,6 +1649,7 @@
     els.nearestList.hidden = true;
     els.nearestButton.removeAttribute("aria-busy");
     setToolNote(els.nearestNote, "", "neutral");
+    clearReverse();
     hideResult();
     updateURL();
     refresh();
@@ -1489,7 +1707,7 @@
   // Alat peta bisa mengisi layar tanpa titik A/B, jadi Ulangi harus hidup
   // setiap kali ada sesuatu untuk dibersihkan, bukan hanya saat ada rute.
   function toolsActive() {
-    return !els.nearestList.hidden || !els.isoNote.hidden;
+    return !els.nearestList.hidden || !els.isoNote.hidden || !els.reverseCard.hidden;
   }
 
   function updateControls() {
@@ -1500,6 +1718,8 @@
     els.resetButton.disabled = !state.loading && !state.from && !state.to && !state.result && !toolsActive();
     els.swapButton.disabled = !state.from && !state.to;
     els.nearestButton.disabled = state.loading;
+    var busy = els.reverseButton.hasAttribute("aria-busy");
+    els.reverseButton.disabled = placeUnavailable || busy;
   }
 
   function nextStepText() {
