@@ -4,8 +4,9 @@ Interactive map for the Nusapeta routing and geocoding engines, served by
 nginx with the API proxied to the gateway container.
 
     web/index.html      map page, {{ASSET_VERSION}} stamped at image build
-    web/assets/         app.css, app.js, vendored Leaflet
-    deploy/nginx.conf   static serving, /route and /place proxied to the gateway
+    web/lab/index.html  raw API console for the same endpoints
+    web/assets/         app.css, app.js, lab.css, lab.js, vendored Leaflet
+    deploy/nginx.conf   static serving, API paths proxied to the gateway
 
 Separate from the engine repository on purpose: the UI changes far more often
 than the engine, and a UI deploy should not rebuild a 36.8 MB gateway image or
@@ -40,6 +41,28 @@ search calls fail; static rendering and `/healthz` still work.
 The engine's gateway must be up as `routeid-gateway`, and both containers must
 share `1panel-network`.
 
+## Route options and map tools
+
+- `Opsi rute` holds the `avoid` checkboxes (toll, ferry, unpaved, motorway) and
+  the `alt` count (0–3). Both are part of the URL state, so a link reproduces the
+  request; unknown `avoid` keys from a hand-edited link are dropped.
+- Alternatives come back as `alternatives[].points`, so switching between them
+  never issues a second route request. The list starts with `Rute utama`, the
+  route line and the metrics both follow the selected row, and the animation
+  replays because the geometry is redrawn from the pick.
+- `Rute alternatif` is hidden unless the response actually carries alternatives:
+  the engine bans every edge already used, then drops any candidate overlapping
+  the main route above 0.8, so a short or empty list is a real answer, not a
+  failure.
+- `Jalan terdekat` calls `/nearest` for point A, else B, else the map centre and
+  lists the snapped candidates; a row recentres the map. `Area terjangkau` calls
+  `/isochrone` for 10 or 15 minutes and reports the returned area and node count.
+  A `422` clears the overlay, resets the select and shows the engine's reason, so
+  an oversized area never leaves a stale polygon on the map.
+- `/lab/` exposes the same endpoints as raw forms (`/route` with `via` and
+  `format`, `/matrix`, `/nearest`, `/isochrone`) and prints status, elapsed time
+  and the JSON body.
+
 ## Map styling
 
 - Tiles are only `tile.openstreetmap.org` (CSP `img-src`). To keep the route the
@@ -63,9 +86,14 @@ share `1panel-network`.
 ## Contract
 
 - `/` and `/assets/` are static; `/assets/` is immutable-cached because every
-  asset URL carries `?v=<commit>`.
-- `/route` and `/place/` are proxied unchanged. `CF-Connecting-IP` is forwarded,
-  because the gateway rate limits per client and runs with `-trust-proxy`.
+  asset URL carries `?v=<commit>`. Every `*.html` gets the same stamp, so the lab
+  page cannot pair new markup with a cached script either.
+- `/route`, `/place/`, `/matrix`, `/nearest` and `/isochrone` are proxied
+  unchanged. `CF-Connecting-IP` is forwarded, because the gateway rate limits per
+  client and runs with `-trust-proxy`.
+- `/lab/` is a second document, not a SPA route: `/lab` redirects to `/lab/`
+  relatively (`absolute_redirect off`), and neither path falls back to
+  `index.html`.
 - `/healthz` answers for this container only. The gateway health lives in the
   engine deployment.
 

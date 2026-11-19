@@ -37,6 +37,15 @@
     snapTo: document.getElementById("result-snap-to"),
     badges: document.getElementById("result-badges"),
     note: document.getElementById("result-note"),
+    alternatives: document.getElementById("result-alternatives"),
+    alternativeList: document.getElementById("alternative-list"),
+    avoidInputs: Array.prototype.slice.call(document.querySelectorAll("[data-avoid]")),
+    altSelect: document.getElementById("alt-select"),
+    nearestButton: document.getElementById("nearest-button"),
+    nearestNote: document.getElementById("nearest-note"),
+    nearestList: document.getElementById("nearest-list"),
+    isoSelect: document.getElementById("iso-select"),
+    isoNote: document.getElementById("iso-note"),
     profileButtons: Array.prototype.slice.call(document.querySelectorAll("[data-profile]"))
   };
 
@@ -44,9 +53,13 @@
     from: null,
     to: null,
     profile: "mobil",
+    avoid: [],
+    alt: 0,
     loading: false,
     error: false,
     result: null,
+    alternatives: [],
+    alternative: -1,
     request: null,
     sequence: 0
   };
@@ -54,6 +67,9 @@
   var fromMarker = null;
   var toMarker = null;
   var routeLayer = null;
+  var isoLayer = null;
+  var isoController = null;
+  var isoSequence = 0;
   var locateButton = null;
   var locateLabel = null;
   var locatePending = false;
@@ -125,6 +141,19 @@
   els.resetButton.addEventListener("click", resetAll);
   els.swapButton.addEventListener("click", swapPoints);
   els.shareButton.addEventListener("click", copyLink);
+  els.nearestButton.addEventListener("click", findNearest);
+  els.isoSelect.addEventListener("change", toggleIsochrone);
+  els.altSelect.addEventListener("change", function () {
+    state.alt = clampAlt(els.altSelect.value);
+    routeOptionsChanged();
+  });
+  els.avoidInputs.forEach(function (input) {
+    input.addEventListener("change", function () {
+      state.avoid = readAvoid();
+      routeOptionsChanged();
+    });
+  });
+  els.alternativeList.addEventListener("click", chooseAlternative);
 
   els.profileButtons.forEach(function (button) {
     button.addEventListener("click", function () {
@@ -171,6 +200,9 @@
     state.profile = params.get("profile") === "motor" ? "motor" : "mobil";
     state.from = from;
     state.to = to;
+    state.avoid = parseAvoid(params.get("avoid"));
+    state.alt = clampAlt(params.get("alt"));
+    syncOptionInputs();
 
     syncMarker("from");
     syncMarker("to");
@@ -370,8 +402,13 @@
     cancelRequest();
     clearRoute();
     state.result = null;
+    state.alternatives = [];
+    state.alternative = -1;
     state.error = false;
     hideResult();
+    clearIsochrone();
+    els.isoSelect.value = "0";
+    setToolNote(els.isoNote, "", "neutral");
     updateURL();
     refresh();
     setStatus(nextStepText(), "neutral");
@@ -715,6 +752,12 @@
       format: "geojson",
       profile: state.profile
     });
+    if (state.avoid.length) {
+      query.set("avoid", state.avoid.join(","));
+    }
+    if (state.alt > 0) {
+      query.set("alt", String(state.alt));
+    }
     var startedAt = performance.now();
 
     fetch("/route?" + query.toString(), {
@@ -747,7 +790,10 @@
       state.loading = false;
       state.request = null;
       state.result = body;
+      state.alternatives = Array.isArray(body.alternatives) ? body.alternatives : [];
+      state.alternative = -1;
       drawRoute(body);
+      renderAlternatives();
       var requestURL = "/route?" + query.toString();
       showResult(body, {
         latencyMs: performance.now() - startedAt,
@@ -770,6 +816,8 @@
       state.request = null;
       state.error = true;
       state.result = null;
+      state.alternatives = [];
+      state.alternative = -1;
       clearRoute();
       hideResult();
       refresh();
@@ -792,10 +840,15 @@
   }
 
   function drawRoute(body) {
+    drawGeometry(body.geojson);
+    fitRoute(body);
+  }
+
+  function drawGeometry(geojson) {
     clearRoute();
 
     var group = L.layerGroup();
-    var casing = L.geoJSON(body.geojson, {
+    var casing = L.geoJSON(geojson, {
       style: {
         color: "#ffffff",
         weight: 9,
@@ -804,7 +857,7 @@
         lineJoin: "round"
       }
     });
-    var line = L.geoJSON(body.geojson, {
+    var line = L.geoJSON(geojson, {
       className: "route-core",
       style: {
         color: "#d92f14",
@@ -817,8 +870,8 @@
 
     group.addLayer(casing);
     group.addLayer(line);
-    addSnapLine(group, state.from, body.snap_from);
-    addSnapLine(group, state.to, body.snap_to);
+    addSnapLine(group, state.from, state.result && state.result.snap_from);
+    addSnapLine(group, state.to, state.result && state.result.snap_to);
     group.addTo(map);
     routeLayer = group;
 
@@ -831,8 +884,6 @@
         element.classList.add("route-core-draw");
       }
     });
-
-    fitRoute(body);
   }
 
   function addSnapLine(group, point, snap) {
@@ -997,8 +1048,344 @@
     els.result.hidden = true;
     els.badges.replaceChildren();
     els.badges.hidden = true;
+    els.alternativeList.replaceChildren();
+    els.alternatives.hidden = true;
     els.note.textContent = "";
     els.note.hidden = true;
+  }
+
+  function readAvoid() {
+    return els.avoidInputs.filter(function (input) {
+      return input.checked;
+    }).map(function (input) {
+      return input.dataset.avoid;
+    });
+  }
+
+  // Kunci yang dikenal API. Nilai lain diabaikan supaya tautan lama atau yang
+  // diketik tangan tidak diam-diam mengubah hasil.
+  function parseAvoid(raw) {
+    if (!raw) {
+      return [];
+    }
+    var known = ["toll", "ferry", "unpaved", "motorway"];
+    var seen = [];
+    raw.split(/[,|]/).forEach(function (value) {
+      var key = value.trim().toLowerCase();
+      if (known.indexOf(key) !== -1 && seen.indexOf(key) === -1) {
+        seen.push(key);
+      }
+    });
+    return seen;
+  }
+
+  function clampAlt(raw) {
+    var value = Number(raw);
+    if (!Number.isFinite(value)) {
+      return 0;
+    }
+    return Math.max(0, Math.min(3, Math.round(value)));
+  }
+
+  function syncOptionInputs() {
+    els.avoidInputs.forEach(function (input) {
+      input.checked = state.avoid.indexOf(input.dataset.avoid) !== -1;
+    });
+    els.altSelect.value = String(state.alt);
+  }
+
+  function routeOptionsChanged() {
+    state.error = false;
+    updateURL();
+    if (!state.from || !state.to) {
+      return;
+    }
+    calculateRoute();
+  }
+
+  function alternativeGeoJSON(index) {
+    var alt = state.alternatives[index];
+    if (!alt || !Array.isArray(alt.points) || alt.points.length < 2) {
+      return null;
+    }
+    var coordinates = alt.points.map(function (point) {
+      return [point[1], point[0]];
+    });
+    return {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        geometry: { type: "LineString", coordinates: coordinates },
+        properties: {}
+      }]
+    };
+  }
+
+  function renderAlternatives() {
+    els.alternativeList.replaceChildren();
+    var hasAlternatives = state.alternatives.length > 0;
+    els.alternatives.hidden = !hasAlternatives;
+    if (!hasAlternatives) {
+      return;
+    }
+
+    var rows = [{ label: "Rute utama", distance: state.result.distance_m, duration: state.result.duration_s, index: -1 }];
+    state.alternatives.forEach(function (alt, index) {
+      rows.push({ label: "Alternatif " + (index + 1), distance: alt.distance_m, duration: alt.duration_s, index: index });
+    });
+
+    rows.forEach(function (row) {
+      var item = document.createElement("li");
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "alternative-row";
+      button.dataset.index = String(row.index);
+      button.setAttribute("aria-pressed", row.index === state.alternative ? "true" : "false");
+
+      var label = document.createElement("span");
+      label.textContent = row.label;
+      var figures = document.createElement("span");
+      figures.textContent = formatDistance(row.distance) + " · " + formatDuration(row.duration);
+
+      button.appendChild(label);
+      button.appendChild(figures);
+      item.appendChild(button);
+      els.alternativeList.appendChild(item);
+    });
+  }
+
+  function chooseAlternative(event) {
+    var button = event.target && event.target.closest ? event.target.closest("[data-index]") : null;
+    if (!button) {
+      return;
+    }
+    var index = Number(button.dataset.index);
+    if (!Number.isFinite(index)) {
+      return;
+    }
+
+    var geojson = index === -1 ? state.result && state.result.geojson : alternativeGeoJSON(index);
+    if (!geojson) {
+      return;
+    }
+    state.alternative = index;
+    drawGeometry(geojson);
+    renderAlternatives();
+
+    var entry = index === -1 ? state.result : state.alternatives[index];
+    setText(els.distance, formatDistance(entry.distance_m));
+    setText(els.duration, formatDuration(entry.duration_s));
+    setText(els.speed, formatSpeed(entry.distance_m, entry.duration_s));
+    setStatus(index === -1 ? "Rute utama ditampilkan." : "Alternatif " + (index + 1) + " ditampilkan.", "neutral");
+  }
+
+  function findNearest() {
+    var origin = state.from || map.getCenter();
+    els.nearestButton.setAttribute("aria-busy", "true");
+    els.nearestButton.disabled = true;
+    setToolNote(els.nearestNote, "Mencari ruas jalan terdekat.", "neutral");
+
+    var query = new URLSearchParams({
+      lat: Number(origin.lat).toFixed(6),
+      lon: Number(origin.lng).toFixed(6),
+      k: "5"
+    });
+
+    fetch("/nearest?" + query.toString(), { headers: { Accept: "application/json" } })
+      .then(function (response) {
+        return response.json().catch(function () {
+          return null;
+        }).then(function (body) {
+          return { response: response, body: body };
+        });
+      })
+      .then(function (reply) {
+        if (!reply.response.ok) {
+          var reason = reply.body && reply.body.reason;
+          throw new Error(reason === "snap"
+            ? "Tidak ada jalan dalam radius snap di titik ini."
+            : "Permintaan ruas terdekat gagal (HTTP " + reply.response.status + ").");
+        }
+        renderNearest(reply.body);
+        setToolNote(els.nearestNote, "", "neutral");
+      })
+      .catch(function (error) {
+        els.nearestList.hidden = true;
+        els.nearestList.replaceChildren();
+        setToolNote(els.nearestNote, error instanceof TypeError
+          ? "Tidak bisa menghubungi server. Periksa koneksi."
+          : (error && error.message ? error.message : "Gagal mencari ruas terdekat."), "error");
+      })
+      .finally(function () {
+        els.nearestButton.removeAttribute("aria-busy");
+        updateControls();
+      });
+  }
+
+  function renderNearest(body) {
+    var candidates = body && Array.isArray(body.candidates) ? body.candidates : [];
+    els.nearestList.replaceChildren();
+    els.nearestList.hidden = candidates.length === 0;
+    if (!candidates.length) {
+      setToolNote(els.nearestNote, "Tidak ada kandidat jalan di titik ini.", "neutral");
+      return;
+    }
+
+    candidates.forEach(function (candidate) {
+      var lat = Number(candidate.lat);
+      var lng = Number(candidate.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return;
+      }
+      var item = document.createElement("li");
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "nearest-row";
+      button.dataset.lat = String(lat);
+      button.dataset.lng = String(lng);
+
+      var label = document.createElement("span");
+      label.textContent = lat.toFixed(5) + ", " + lng.toFixed(5);
+      var distance = document.createElement("span");
+      distance.textContent = formatMeters(candidate.distance_m) || "—";
+
+      button.appendChild(label);
+      button.appendChild(distance);
+      button.addEventListener("click", function () {
+        centerOnLocation(lat, lng);
+        setStatus("Peta dipusatkan di ruas terdekat.", "neutral");
+      });
+      item.appendChild(button);
+      els.nearestList.appendChild(item);
+    });
+    setToolNote(els.nearestNote, "Kandidat snap terdekat, tanpa perhitungan rute.", "neutral");
+  }
+
+  function toggleIsochrone() {
+    var minutes = Number(els.isoSelect.value);
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      clearIsochrone();
+      setToolNote(els.isoNote, "", "neutral");
+      return;
+    }
+    loadIsochrone(minutes);
+  }
+
+  function loadIsochrone(minutes) {
+    var origin = state.from || map.getCenter();
+    isoSequence += 1;
+    var sequence = isoSequence;
+    if (isoController) {
+      isoController.abort();
+    }
+    var controller = new AbortController();
+    isoController = controller;
+    setToolNote(els.isoNote, "Menghitung area " + minutes + " menit.", "neutral");
+
+    var query = new URLSearchParams({
+      lat: Number(origin.lat).toFixed(6),
+      lon: Number(origin.lng).toFixed(6),
+      minutes: String(minutes)
+    });
+
+    fetch("/isochrone?" + query.toString(), {
+      signal: controller.signal,
+      headers: { Accept: "application/json" }
+    }).then(function (response) {
+      return response.json().catch(function () {
+        return null;
+      }).then(function (body) {
+        return { response: response, body: body };
+      });
+    }).then(function (reply) {
+      if (sequence !== isoSequence) {
+        return;
+      }
+      isoController = null;
+      if (!reply.response.ok) {
+        var reason = reply.body && reply.body.reason;
+        throw new Error(reason === "isochrone_too_large"
+          ? "Area " + minutes + " menit terlalu besar untuk dihitung. " +
+            (minutes > 10 ? "Coba 10 menit." : "Coba titik lain.")
+          : reason === "snap"
+            ? "Tidak ada jalan di dekat titik awal."
+            : "Permintaan area gagal (HTTP " + reply.response.status + ").");
+      }
+      if (!reply.body || reply.body.type !== "FeatureCollection") {
+        throw new Error("Respons area tidak valid.");
+      }
+      drawIsochrone(reply.body);
+      var meta = reply.body.meta || {};
+      var area = Number(meta.area_m2);
+      var parts = [];
+      if (Number.isFinite(area) && area > 0) {
+        parts.push(formatArea(area));
+      }
+      if (Number.isFinite(meta.nodes_visited)) {
+        parts.push(formatCount(meta.nodes_visited) + " simpul");
+      }
+      setToolNote(els.isoNote, parts.length
+        ? "Area " + minutes + " menit: " + parts.join(", ") + "."
+        : "Area " + minutes + " menit ditampilkan.", "neutral");
+    }).catch(function (error) {
+      if (error && error.name === "AbortError") {
+        return;
+      }
+      if (sequence !== isoSequence) {
+        return;
+      }
+      isoController = null;
+      clearIsochrone();
+      els.isoSelect.value = "0";
+      setToolNote(els.isoNote, error instanceof TypeError
+        ? "Tidak bisa menghubungi server. Periksa koneksi."
+        : (error && error.message ? error.message : "Gagal menghitung area."), "error");
+    });
+  }
+
+  function drawIsochrone(body) {
+    clearIsochrone();
+    isoLayer = L.geoJSON(body, {
+      style: {
+        color: "#1a3aa0",
+        weight: 2,
+        opacity: 0.9,
+        fillColor: "#2450c8",
+        fillOpacity: 0.14
+      }
+    }).addTo(map);
+  }
+
+  function clearIsochrone() {
+    isoSequence += 1;
+    if (isoController) {
+      isoController.abort();
+      isoController = null;
+    }
+    if (isoLayer) {
+      map.removeLayer(isoLayer);
+      isoLayer = null;
+    }
+  }
+
+  function setToolNote(element, message, tone) {
+    element.textContent = message || "";
+    element.hidden = !message;
+    if (tone && tone !== "neutral") {
+      element.dataset.tone = tone;
+    } else {
+      element.removeAttribute("data-tone");
+    }
+  }
+
+  function formatArea(squareMeters) {
+    if (squareMeters < 1e6) {
+      return Math.round(squareMeters / 1e4).toLocaleString("id-ID") + " ha";
+    }
+    return (squareMeters / 1e6).toLocaleString("id-ID", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1
+    }) + " km²";
   }
 
   function swapPoints() {
@@ -1028,9 +1415,21 @@
     state.to = null;
     state.error = false;
     state.result = null;
+    state.alternatives = [];
+    state.alternative = -1;
+    state.avoid = [];
+    state.alt = 0;
+    syncOptionInputs();
     syncMarker("from");
     syncMarker("to");
     clearRoute();
+    clearIsochrone();
+    els.isoSelect.value = "0";
+    setToolNote(els.isoNote, "", "neutral");
+    els.nearestList.replaceChildren();
+    els.nearestList.hidden = true;
+    els.nearestButton.removeAttribute("aria-busy");
+    setToolNote(els.nearestNote, "", "neutral");
     hideResult();
     updateURL();
     refresh();
@@ -1092,6 +1491,7 @@
     els.shareButton.disabled = !ready;
     els.resetButton.disabled = !state.loading && !state.from && !state.to && !state.result;
     els.swapButton.disabled = !state.from && !state.to;
+    els.nearestButton.disabled = state.loading;
   }
 
   function nextStepText() {
@@ -1132,6 +1532,12 @@
     }
     if (state.profile === "motor") {
       query.set("profile", "motor");
+    }
+    if (state.avoid.length) {
+      query.set("avoid", state.avoid.join(","));
+    }
+    if (state.alt > 0) {
+      query.set("alt", String(state.alt));
     }
     var search = query.toString();
     var next = window.location.pathname + (search ? "?" + search : "");

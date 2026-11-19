@@ -11,7 +11,7 @@ COPY deploy/nginx/headers.conf deploy/nginx/proxy.conf /etc/nginx/snippets/
 # The base image builds as the unprivileged user and /usr/share/nginx/html is
 # root-owned, so the stamp needs one root step. The served process stays as-is.
 USER root
-RUN sed -i "s/{{ASSET_VERSION}}/${COMMIT}/g" /usr/share/nginx/html/index.html
+RUN find /usr/share/nginx/html -name '*.html' -exec sed -i "s/{{ASSET_VERSION}}/${COMMIT}/g" {} +
 USER nginx
 
 EXPOSE 8080

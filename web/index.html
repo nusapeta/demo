@@ -56,6 +56,26 @@
 
     <p class="hint" id="hint">Klik peta untuk memilih titik awal.</p>
 
+    <details class="options">
+      <summary class="options-summary">Opsi rute</summary>
+      <fieldset class="options-group">
+        <legend class="control-label">Hindari</legend>
+        <label class="check"><input type="checkbox" data-avoid="toll"> Tol</label>
+        <label class="check"><input type="checkbox" data-avoid="ferry"> Feri</label>
+        <label class="check"><input type="checkbox" data-avoid="unpaved"> Jalan tidak beraspal</label>
+        <label class="check"><input type="checkbox" data-avoid="motorway"> Jalan bebas hambatan</label>
+      </fieldset>
+      <label class="select-field" for="alt-select">
+        <span class="control-label">Rute alternatif</span>
+        <select class="select" id="alt-select">
+          <option value="0">Tidak perlu</option>
+          <option value="1">1 alternatif</option>
+          <option value="2">2 alternatif</option>
+          <option value="3">3 alternatif</option>
+        </select>
+      </label>
+    </details>
+
     <div class="actions">
       <button type="button" class="button button--primary" id="route-button" disabled>Hitung rute</button>
       <button type="button" class="button" id="reset-button" disabled>Ulangi</button>
@@ -107,8 +127,34 @@
         </div>
       </dl>
       <div class="badges" id="result-badges" hidden></div>
+      <div class="alternatives" id="result-alternatives" hidden>
+        <h3>Rute alternatif</h3>
+        <ol class="alternative-list" id="alternative-list"></ol>
+      </div>
       <p class="result-note" id="result-note" hidden></p>
     </section>
+
+    <div class="tools" aria-labelledby="tools-title">
+      <h2 id="tools-title">Alat peta</h2>
+      <div class="tool">
+        <span class="control-label" id="nearest-label">Jalan terdekat</span>
+        <p class="tool-note" id="nearest-note" hidden></p>
+        <button type="button" class="button" id="nearest-button" aria-describedby="nearest-label" disabled>Cari ruas terdekat</button>
+        <ul class="nearest-list" id="nearest-list" aria-label="Ruas jalan terdekat" hidden></ul>
+      </div>
+      <div class="tool">
+        <label class="select-field" for="iso-select">
+          <span class="control-label">Area terjangkau</span>
+          <select class="select" id="iso-select">
+            <option value="0">Mati</option>
+            <option value="10">10 menit</option>
+            <option value="15">15 menit</option>
+          </select>
+        </label>
+        <p class="tool-note" id="iso-note" hidden></p>
+      </div>
+      <p class="tool-link"><a href="/lab/">Lab API mentah</a> untuk semua endpoint, termasuk /matrix dan /via.</p>
+    </div>
 
     <p class="fineprint">Rute dihitung dari data <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL 1.0). Hasil dapat berbeda dari navigasi produksi.</p>
   </aside>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Nusapeta: lab API</title>
+<meta name="description" content="Halaman uji mentah endpoint Nusapeta: rute dengan opsi, matriks, ruas terdekat, dan area terjangkau.">
+<link rel="stylesheet" href="/assets/lab.css?v={{ASSET_VERSION}}">
+</head>
+<body>
+<main class="lab">
+  <header class="lab-head">
+    <p class="lab-back"><a href="/">&larr; Kembali ke peta</a></p>
+    <h1>Lab API</h1>
+    <p>Kirim permintaan langsung ke endpoint Nusapeta dan lihat JSON mentahnya. Halaman ini memakai jalur yang sama dengan peta: <code>/route</code>, <code>/matrix</code>, <code>/nearest</code>, <code>/isochrone</code>.</p>
+  </header>
+
+  <section class="lab-tool" aria-labelledby="route-title">
+    <h2 id="route-title">Rute</h2>
+    <form class="lab-form" data-endpoint="/route">
+      <label>from <input name="from" value="-6.1754,106.8272" required autocomplete="off" spellcheck="false"></label>
+      <label>to <input name="to" value="-6.5950,106.8166" required autocomplete="off" spellcheck="false"></label>
+      <label>profile
+        <select name="profile">
+          <option value="mobil">mobil</option>
+          <option value="motor">motor</option>
+        </select>
+      </label>
+      <label>format
+        <select name="format">
+          <option value="geojson">geojson</option>
+          <option value="json">json</option>
+        </select>
+      </label>
+      <label>avoid <input name="avoid" placeholder="toll,ferry" autocomplete="off" spellcheck="false"></label>
+      <label>alt <input name="alt" type="number" min="0" max="3" step="1" placeholder="0" inputmode="numeric"></label>
+      <label>via <input name="via" placeholder="-6.3,106.9|-6.4,107.1" autocomplete="off" spellcheck="false"></label>
+      <button type="submit" class="button button--primary">Kirim</button>
+    </form>
+    <div class="lab-out" data-out hidden></div>
+  </section>
+
+  <section class="lab-tool" aria-labelledby="matrix-title">
+    <h2 id="matrix-title">Matriks</h2>
+    <form class="lab-form" data-endpoint="/matrix">
+      <label>sources <input name="sources" value="-6.2,106.8" required autocomplete="off" spellcheck="false"></label>
+      <label>targets <input name="targets" value="-6.2,106.8012|-6.1988,106.8024" required autocomplete="off" spellcheck="false"></label>
+      <label>max_minutes <input name="max_minutes" type="number" min="1" max="180" step="1" placeholder="60" inputmode="numeric"></label>
+      <button type="submit" class="button button--primary">Kirim</button>
+    </form>
+    <div class="lab-out" data-out hidden></div>
+  </section>
+
+  <section class="lab-tool" aria-labelledby="nearest-title">
+    <h2 id="nearest-title">Ruas terdekat</h2>
+    <form class="lab-form" data-endpoint="/nearest">
+      <label>lat <input name="lat" value="-6.1754" required autocomplete="off" spellcheck="false"></label>
+      <label>lon <input name="lon" value="106.8272" required autocomplete="off" spellcheck="false"></label>
+      <label>k <input name="k" type="number" min="1" max="32" step="1" placeholder="1" inputmode="numeric"></label>
+      <label>max <input name="max" type="number" min="1" max="100000" step="1" placeholder="meter" inputmode="numeric"></label>
+      <button type="submit" class="button button--primary">Kirim</button>
+    </form>
+    <div class="lab-out" data-out hidden></div>
+  </section>
+
+  <section class="lab-tool" aria-labelledby="iso-title">
+    <h2 id="iso-title">Area terjangkau</h2>
+    <form class="lab-form" data-endpoint="/isochrone">
+      <label>lat <input name="lat" value="-6.1754" required autocomplete="off" spellcheck="false"></label>
+      <label>lon <input name="lon" value="106.8272" required autocomplete="off" spellcheck="false"></label>
+      <label>minutes <input name="minutes" type="number" min="1" max="60" step="1" placeholder="15" inputmode="numeric"></label>
+      <label>meters <input name="meters" type="number" min="1" step="1" placeholder="maks" inputmode="numeric"></label>
+      <label>grid <input name="grid" type="number" min="50" max="10000" step="10" placeholder="250" inputmode="numeric"></label>
+      <label>simplify <input name="simplify" type="number" min="0" step="1" placeholder="25" inputmode="numeric"></label>
+      <button type="submit" class="button button--primary">Kirim</button>
+    </form>
+    <div class="lab-out" data-out hidden></div>
+  </section>
+
+  <p class="fineprint">Data dari <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL 1.0). Batas: 5 sumber &times; 25 tujuan untuk matriks, <code>k</code> 1&ndash;32 untuk ruas terdekat, area 10&ndash;15 menit realistis di Jabodetabek.</p>
+</main>
+<script src="/assets/lab.js?v={{ASSET_VERSION}}"></script>
+</body>
+</html>
